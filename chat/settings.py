@@ -32,9 +32,12 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'chat_messages',
     'users',
     'rest_framework_simplejwt.token_blacklist',
     'rest_framework_simplejwt',
+    'daphne',
+    'channels',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
 ]
 
 MIDDLEWARE = [
@@ -144,6 +148,60 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Access Token lifetime is set to 30 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh Token lifetime is set to 7 days
-    'ROTATE_REFRESH_TOKENS': True,  
+    'ROTATE_REFRESH_TOKENS': False,  
     'BLACKLIST_AFTER_ROTATION': False,  
 }
+ASGI_APPLICATION = 'chat.asgi.application'
+
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+        'detailed': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'detailed',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'ERROR',  # مستوى السجل لتطبيق Django
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'chat_messages': { 
+            'handlers': ['console'],
+            'level': 'INFO',  
+            'propagate': True,
+        },
+    },
+}
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+

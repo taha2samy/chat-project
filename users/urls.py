@@ -1,5 +1,8 @@
 from django.urls import path
-from .views import LoginView, TokenRefreshView ,ProfileView,SignUpView,LogoutView
+#from .views import LoginView, TokenRefreshView ,ProfileView,SignUpView,LogoutView
+from .views.auth_views import SignUpView, LoginView, LogoutView,TokenRefreshView
+from .views.profile_views import ProfileView
+
 app_name = 'users'
 
 urlpatterns = [

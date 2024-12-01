@@ -9,6 +9,9 @@ pillow = "*"
 djangorestframework = "*"
 rest-framework-simplejwt = "*"
 djangorestframework-simplejwt = {extras = ["crypto"], version = "*"}
+channels = "*"
+daphne = "*"
+logger = "*"
 
 [dev-packages]
 
