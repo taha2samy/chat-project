@@ -52,7 +52,14 @@
 					},
 					"request": {
 						"auth": {
-							"type": "inherit"
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzMzMDI4MDkyLCJpYXQiOjE3MzMwMjYyOTIsImp0aSI6IjAwYjViYWRiMWE4YTRiMTlhMWI4NGE5NjM1ZWQ5YzdlIiwidXNlcl9pZCI6MX0.VIkmW-g2S1LDJS1aaNoysMCXNA1YCQf7NIeo_Y0BMXI",
+									"type": "string"
+								}
+							]
 						},
 						"method": "GET",
 						"header": [],
@@ -114,6 +121,42 @@
 							"path": [
 								"api",
 								"signup",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "http://127.0.0.1:8000/api/refresh-token/",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\"refresh\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTczMzY1OTU4NSwiaWF0IjoxNzMzMDU0Nzg1LCJqdGkiOiI4MTYxNzUzMjZiNjE0MGJjOTJkMDIxOGVlMjVhNmFjOCIsInVzZXJfaWQiOjF9.dCwwPDsNz1kSsY73hcNXGQp5pc0gToV9ek16SFxitmA\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/refresh-token/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"refresh-token",
 								""
 							]
 						}
