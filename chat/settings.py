@@ -168,7 +168,7 @@ LOGGING = {
             'style': '{',
         },
         'detailed': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} {filename} {funcName} {message}',
             'style': '{',
         },
     },
@@ -178,11 +178,16 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'detailed',
         },
+        'console_users': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'ERROR',  # مستوى السجل لتطبيق Django
+            'level': 'ERROR', 
             'propagate': True,
         },
         'django.request': {
@@ -192,7 +197,12 @@ LOGGING = {
         },
         'chat_messages': { 
             'handlers': ['console'],
-            'level': 'INFO',  
+            'level': 'DEBUG',  
+            'propagate': True,
+        },
+        'users': { 
+            'handlers': ['console_users'],
+            'level': 'DEBUG',  
             'propagate': True,
         },
     },
