@@ -1,5 +1,5 @@
 # Database diagram
-![Image Description](./readme_images\databasemodel.svg)
+![Image Description](readme_images/databasemodel.svg)
 
 # user application end points
-![Image Description](./readme_images\endpoint.svg)
+![Image Description](readme_images/endpoint.svg)
