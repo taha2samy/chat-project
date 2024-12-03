@@ -14,24 +14,27 @@ class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
         # Get the JWT token from the WebSocket headers
         token = None
-        for key, value in scope['headers']:
-            if key == b'authorization':
-                token = value.decode().split(' ')[1]  # 'Bearer <token>'
+        try:
 
-        if token:
-            try:
-                # Validate the JWT token and extract user information
-                user = await self.authenticate_token(token)
-                scope['user'] = user
-            except jwt.ExpiredSignatureError:
-                scope['user'] = AnonymousUser()
-            except jwt.InvalidTokenError:
-                scope['user'] = AnonymousUser()
-        else:
-            scope['user'] = AnonymousUser()
-        scope["access_token"]=token
-        return await super().__call__(scope, receive, send)
+            for key, value in scope['headers']:
+                if key == b'authorization':
+                    token = value.decode().split(' ')[1]  # 'Bearer <token>'
 
+            if token:
+                try:
+                    # Validate the JWT token and extract user information
+                    user = await self.authenticate_token(token)
+                    scope['user'] = user
+                except jwt.ExpiredSignatureError:
+                    scope['user'] = AnonymousUser()
+                except jwt.InvalidTokenError:
+                    scope['user'] = AnonymousUser()
+            else:
+                scope['user'] = AnonymousUser()
+            scope["access_token"]=token
+            return await super().__call__(scope, receive, send)
+        except:
+            scope["user"]=AnonymousUser()
     @database_sync_to_async
     def authenticate_token(self, token):
         """
