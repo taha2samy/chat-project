@@ -25,16 +25,16 @@ class JWTAuthMiddleware(BaseMiddleware):
                     # Validate the JWT token and extract user information
                     user = await self.authenticate_token(token)
                     scope['user'] = user
-                except jwt.ExpiredSignatureError:
-                    scope['user'] = AnonymousUser()
-                except jwt.InvalidTokenError:
+                except:
                     scope['user'] = AnonymousUser()
             else:
                 scope['user'] = AnonymousUser()
-            scope["access_token"]=token
-            return await super().__call__(scope, receive, send)
+            
+           
         except:
+            scope["access_token"]=token
             scope["user"]=AnonymousUser()
+        return await super().__call__(scope, receive, send)
     @database_sync_to_async
     def authenticate_token(self, token):
         """
