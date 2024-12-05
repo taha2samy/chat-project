@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+import uuid
 import os
 
 
@@ -13,7 +14,24 @@ def image_path(instance, filename, folder_name):
     return os.path.join(folder_name, filename)  # Return the dynamic path
 
 
+def generate_uuid_for_user():
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "Users")
+
+
+def generate_uuid_for_friendship():
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "Friendship")
+
+
+def generate_uuid_for_chatgroup():
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "chatgroup")
+
+
+def generate_uuid_for_group_membership():
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "GroupMembership")
+
+
 class User(AbstractUser):
+    id = models.UUIDField(default=generate_uuid_for_user, editable=False, primary_key=True)
     personal_image = models.ImageField(upload_to=image_path, blank=True, null=True)
 
     def __str__(self):
@@ -21,6 +39,7 @@ class User(AbstractUser):
 
 
 class Friendship(models.Model):
+    id = models.UUIDField(default=generate_uuid_for_friendship, editable=False, primary_key=True)
     from_user = models.ForeignKey(User, related_name='friendship_from', on_delete=models.CASCADE)
     to_user = models.ForeignKey(User, related_name='friendship_to', on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -40,6 +59,7 @@ class Friendship(models.Model):
 
 
 class ChatGroup(models.Model):
+    id = models.UUIDField(default=generate_uuid_for_chatgroup, editable=False, primary_key=True)
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -51,6 +71,7 @@ class ChatGroup(models.Model):
 
 
 class GroupMembership(models.Model):
+    id = models.UUIDField(default=generate_uuid_for_group_membership, editable=False, primary_key=True)
     MEMBER = 'member'
     ADMIN = 'admin'
     

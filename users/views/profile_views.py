@@ -29,7 +29,7 @@ def get_all_friends(user, selected_columns=None):
 
     # Fetch friendships using a single query with Q objects
     friendships = Friendship.objects.filter(
-        Q(from_user=user) | Q(to_user=user)
+        Q(from_user=user.id) | Q(to_user=user.id)
     ).exclude(status="rejected").select_related('from_user', 'to_user')
 
     processed_friends = []
@@ -68,7 +68,7 @@ class ProfileView(APIView):
 
     def get(self, request):
         user = request.user
-
+        logger.warning(f"|||||{user}||||||")
         try:
             # Serialize the user profile
             user_serializer = UserSerializer(
@@ -77,16 +77,16 @@ class ProfileView(APIView):
             )
 
             # Fetch and serialize all groups the user is a member of
-            group_memberships = GroupMembership.objects.filter(user=user)
-
-            groups = ChatGroup.objects.filter(groupmembership__user=user).distinct()
-
+            group_memberships = GroupMembership.objects.filter(id=user.id)
+            
+            groups = ChatGroup.objects.filter(groupmembership__user=user.id).distinct()
             group_data = []
             for group in groups:
                 memberships_in_group = GroupMembership.objects.filter(group=group).exclude(user=user.id)
                 group_serializer = ChatGroupSerializer(group)
                 members_serializer = GroupMembershipSerializer(memberships_in_group, many=True)
                 group_data.append({"meta_data": group_serializer.data, 'members': members_serializer.data})
+            logger.warning("==================")
 
             # Fetch all friendships involving the user
             processed_friends=get_all_friends(user)
@@ -103,8 +103,8 @@ class ProfileView(APIView):
 
         except Exception as e:
             # Log any unexpected errors
-            logger.error(f"Error fetching profile for user {user.username}: {str(e)}")
+            logger.error(f"----{str(e)}")
             return Response(
-                {"error": "An error occurred while fetching the profile."},
+                {"error": f"{e}"},
                 status=500
             )
