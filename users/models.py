@@ -15,19 +15,19 @@ def image_path(instance, filename, folder_name):
 
 
 def generate_uuid_for_user():
-    return uuid.uuid5(uuid.NAMESPACE_DNS, "Users")
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "Users"+str(uuid.uuid4()))
 
 
 def generate_uuid_for_friendship():
-    return uuid.uuid5(uuid.NAMESPACE_DNS, "Friendship")
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "Friendship"+str(uuid.uuid4()))
 
 
 def generate_uuid_for_chatgroup():
-    return uuid.uuid5(uuid.NAMESPACE_DNS, "chatgroup")
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "chatgroup"+str(uuid.uuid4()))
 
 
 def generate_uuid_for_group_membership():
-    return uuid.uuid5(uuid.NAMESPACE_DNS, "GroupMembership")
+    return uuid.uuid5(uuid.NAMESPACE_DNS, "GroupMembership"+str(uuid.uuid4()))
 
 
 class User(AbstractUser):
