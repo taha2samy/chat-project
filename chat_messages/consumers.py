@@ -22,8 +22,11 @@ class MessageConsumer(AsyncWebsocketConsumer):
         self.user = self.scope.get('user')
         logger.info(self.user)
         self.refresh = (lambda x: x.decode('utf-8') if x else None)(dict(self.scope.get('headers')).get(b'refresh'))
-        refresh = await sync_to_async(RefreshToken)(self.refresh)
-        id = refresh.payload.get("user_id")
+        try:
+            refresh = await sync_to_async(RefreshToken)(self.refresh)
+            id = refresh.payload.get("user_id")
+        except:
+            id=None
         if not self.user.is_authenticated: 
             logger.warning("Unauthenticated user attempted to connect.")
             await self.close(code=4001, reason="Unauthorized access")
@@ -46,21 +49,21 @@ class MessageConsumer(AsyncWebsocketConsumer):
         )
 
         # Process the fetched data
-        all_group_memberships = {i for i in all_data2}
-        all_friends_channels = {{i['id']} for i in all_data1}
+        all_group_memberships = {str(i) for i in all_data2}
+        all_friends_channels = {str(i['id']) for i in all_data1}
         
         self.all_channels_subscribe = all_friends_channels.union(all_group_memberships)
         del all_data1, all_data2
         for channel in self.all_channels_subscribe:
-            self.channel_layer.group_add(channel, self.channel_name)
-        self.channel_layer.group_add(f"{self.user.id}", self.channel_name)
+            await self.channel_layer.group_add(channel, self.channel_name)
+        await self.channel_layer.group_add(str(self.user.id), self.channel_name)
     async def disconnect(self, close_code):
         logger.info(f"Connection closed with code: {close_code}")
         if hasattr(self, 'all_channels_subscribe'):
             # Remove all channels concurrently without waiting
             for channel in self.all_channels_subscribe:
-                self.channel_layer.group_discard(channel, self.channel_name)
-            self.channel_layer.group_discard(f"{self.user.id}", self.channel_nam)
+                await self.channel_layer.group_discard(channel, self.channel_name)
+            await self.channel_layer.group_discard(str(self.user.id), self.channel_name)
     async def receive(self, text_data):
         logger.info(f"Received message: from {self.user} {text_data}")
         try:
@@ -96,3 +99,8 @@ class MessageConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         # Send the message to the WebSocket client asynchronously
         await self.send(text_data=json.dumps(event))
+
+    async def check_refresh_disconnect(self,event):
+        if str(event["refresh"])==self.refresh:
+            logger.debug("unathorized conection close from websocket")
+            await self.close(code=4001, reason="Unauthorized access")
