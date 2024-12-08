@@ -4,17 +4,13 @@ import logging
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
-from users.models import GroupMembership
 from channels.db import database_sync_to_async
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.models import Q
-from users.models import Friendship
 from .models import Message,MessageStatus
 from .Serializer import MessageSerializer
 from .database_async import get_all_group,get_all_friendship
 from .encoder import CustomJSONEncoder
 logger = logging.getLogger("chat_messages")
-
 
 
 class MessageConsumer(AsyncWebsocketConsumer):
