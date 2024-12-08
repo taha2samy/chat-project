@@ -43,7 +43,12 @@ class Friendship(models.Model):
     from_user = models.ForeignKey(User, related_name='friendship_from', on_delete=models.CASCADE)
     to_user = models.ForeignKey(User, related_name='friendship_to', on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(
+    status_from_user = models.CharField(
+        max_length=10, 
+        choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected')], 
+        default='pending'
+    )
+    status_to_user = models.CharField(
         max_length=10, 
         choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected')], 
         default='pending'
@@ -55,7 +60,7 @@ class Friendship(models.Model):
         verbose_name_plural = 'Friendships'
 
     def __str__(self):
-        return f"{self.from_user.username} -> {self.to_user.username} ({self.status})"
+        return f"{self.from_user.username} -> {self.to_user.username}"
 
 
 class ChatGroup(models.Model):
