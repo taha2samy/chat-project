@@ -94,3 +94,11 @@ Here’s the updated Markdown with information about initializing the WebSocket 
 - **payload**: The actual message content (e.g., text).
 - **media**: Optional array of base64-encoded files (e.g., images or documents).
 
+
+
+
+## Friendship notification seen
+
+- **type**: Always set to `"friendship_notification_seen"`.
+- **channel**: Unique friendship ID (UUID).
+- **message**: The ID of message.
