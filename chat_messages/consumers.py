@@ -7,66 +7,62 @@ from asgiref.sync import sync_to_async
 from users.models import GroupMembership
 from channels.db import database_sync_to_async
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.authentication import JWTStatelessUserAuthentication
 from django.db.models import Q
 from users.models import Friendship
-from django.forms.models import model_to_dict
-from users.serializers import FriendshipSerializer
 from .models import Message,MessageStatus
-from django.core.serializers.json import DjangoJSONEncoder
 from .Serializer import MessageSerializer
+from .database_async import get_all_group,get_all_friendship
+from .encoder import CustomJSONEncoder
 logger = logging.getLogger("chat_messages")
 
-# Get groups a user belongs to
-@database_sync_to_async
-def get_all_friendship(user):     
-    return list(
-        Friendship.objects.filter(
-            Q(from_user=user.id) | Q(to_user=user.id)
-        ).exclude(status_from_user="rejected", status_to_user="rejected")
-        .select_related('from_user', 'to_user')
-    )
 
-@database_sync_to_async
-def get_all_group(user):
-    group_memberships = GroupMembership.objects.filter(user=user)
-    return list(group_memberships.values('group_id'))
-
-
-@database_sync_to_async
-def get_all_group(user):
-    group_memberships = GroupMembership.objects.filter(user=user)
-    return [i.group.id for i in group_memberships]   
-class CustomJSONEncoder(DjangoJSONEncoder):
-    def default(self, o):
-        if isinstance(o, uuid.UUID):
-            return str(o)  # Convert UUID to string
-        return super().default(o)
 
 class MessageConsumer(AsyncWebsocketConsumer):
-    
+
     async def connect(self):
         self.user = self.scope.get('user')
-        logger.info(self.user)
-        self.refresh = (lambda x: x.decode('utf-8') if x else None)(dict(self.scope.get('headers')).get(b'refresh'))
-        try:
-            refresh = await sync_to_async(RefreshToken)(self.refresh)
-            id = refresh.payload.get("user_id")
-        except:
-            id=None
-        if not self.user.is_authenticated: 
-            logger.warning("Unauthenticated user attempted to connect.")
-            await self.close(code=4001, reason="Unauthorized access")
-            return 
-        if str(self.user.id)!=str(id):
-            logger.warning("Unauthenticated user attempted to connect with out refresh key")
-            await self.close(code=4001, reason="Unauthorized access")
-            return 
+        self.refresh = self._get_refresh_token_from_headers()
+        
+        # Authenticate user
+        if not await self._authenticate_user():
+            return
 
         logger.info(f"Authenticated user connected: {self.user}")
         await self.accept()
+
         # Start background task to fetch data and add channels
         asyncio.create_task(self._fetch_and_add_channels_to_group())
+
+    def _get_refresh_token_from_headers(self):
+        """Extract the refresh token from WebSocket headers."""
+        return (lambda x: x.decode('utf-8') if x else None)(dict(self.scope.get('headers')).get(b'refresh'))
+
+    async def _authenticate_user(self):
+        """Authenticate the user by verifying the refresh token."""
+        # Check if user is authenticated
+        if not self.user.is_authenticated:
+            logger.warning("Unauthenticated user attempted to connect.")
+            await self.close(code=4001, reason="Unauthorized access")
+            return False
+
+        # Check if user ID matches the refresh token
+        user_id_from_refresh = await self._get_user_id_from_refresh_token(self.refresh)
+        if str(self.user.id) != str(user_id_from_refresh):
+            logger.warning("User ID mismatch with refresh token.")
+            await self.close(code=4001, reason="Unauthorized access")
+            return False
+
+        return True
+
+    @sync_to_async
+    def _get_user_id_from_refresh_token(self, refresh_token):
+        """Retrieve user ID from the refresh token payload."""
+        try:
+            refresh = RefreshToken(refresh_token)
+            return refresh.payload.get("user_id")
+        except Exception as e:
+            logger.error(f"Error decoding refresh token: {e}")
+            return None
 
     async def _fetch_and_add_channels_to_group(self):
         all_friendships = await get_all_friendship(self.user)
