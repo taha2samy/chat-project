@@ -8,7 +8,11 @@ from users.serializers import SignUpSerializer
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from rest_framework.permissions import AllowAny
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 import logging
+
 logger = logging.getLogger("users")
 
 User = get_user_model()
@@ -51,20 +55,52 @@ class LogoutView(APIView):
 
 # SignUp View
 class SignUpView(APIView):
-    def post(self, request):
-        serializer = SignUpSerializer(data=request.data)
+    permission_classes = [AllowAny]
 
-        if serializer.is_valid():
-            user = serializer.save()
+    def post(self, request):
+        # Extract data from the request
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        first_name = request.data.get('first_name', '')
+        last_name = request.data.get('last_name', '')
+        personal_image = request.FILES.get('personal_image', None)
+
+        # Validate the password
+        try:
+            validate_password(password)  # Validate password according to Django's settings
+        except ValidationError as e:
+            logger.warning("Sign-up failed: Invalid password.")
+            return Response({"error": e.messages}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate required fields and create user
+        if not username or not email or not password:
+            logger.warning("Sign-up failed: Missing required fields.")
+            return Response({"error": "Username, email, and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create user instance
+        try:
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                personal_image=personal_image,
+            )
+
+            # Issue tokens
             refresh = RefreshToken.for_user(user)
+
             logger.info(f"New user {user.username} registered successfully.")
             return Response({
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
 
-        logger.warning("Sign-up failed: Invalid data provided.")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.warning(f"Sign-up failed: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Login View

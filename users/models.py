@@ -1,14 +1,21 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+import logging
 import uuid
 import os
+logger = logging.getLogger("chat_messages")
 
 
-def image_path(instance, filename, folder_name):
+def image_path(instance, filename):
     """
-    Generates a dynamic file path for the uploaded image based on the provided folder name.
-    The file will be uploaded to MEDIA_ROOT/<folder_name>/<username>_<filename>.
+    Generates a dynamic file path for the uploaded image based on the instance's ID.
+    The file will be uploaded to MEDIA_ROOT/<folder_name>/<instance_id>_<filename>.
     """
+    folder_name = "user_images"  # Specify the folder name dynamically or statically
     ext = filename.split('.')[-1]  # Get the file extension
     filename = f"{instance.__class__.__name__}_{instance.id}.{ext}"  # Use the model class name and instance ID for the filename
     return os.path.join(folder_name, filename)  # Return the dynamic path
@@ -95,3 +102,31 @@ class GroupMembership(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.group.name} ({self.role})"
+
+@receiver(post_save,sender=Friendship)
+def add_or_remove_friendship(sender, instance, created, **kwargs):
+    channel_layer = get_channel_layer()
+    for channel in [instance.from_user_id,instance.to_user_id]:
+        async_to_sync(channel_layer.group_send)(
+            str(channel), 
+            {
+                "type": "add_remove_friendship",
+                "friendship":instance.id,
+                "accepted":False if instance.status_to_user=="rejected" or instance.status_from_user=="rejected" else True,
+                "from_user_id":instance.from_user_id,
+                "to_user_id":instance.to_user_id
+
+            }
+            
+        )
+        async_to_sync(channel_layer.group_send)(
+            str(channel), 
+            {
+                "type": "handler_friendship",
+                "friendship":instance,
+
+            }
+            
+        )
+    
+    

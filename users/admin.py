@@ -10,7 +10,7 @@ class FriendshipAdmin(admin.ModelAdmin):
 admin.site.register(Friendship, FriendshipAdmin)
 # Register the User model
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined')
+    list_display = ("id",'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined')
     search_fields = ('username', 'email')
     list_filter = ('is_active', 'date_joined')
 

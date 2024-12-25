@@ -13,20 +13,6 @@ User = get_user_model()
 
 logger = logging.getLogger("chat_messages")
 
-@receiver(post_save, sender=BlacklistedToken)
-def on_blacklisted_token_created(sender, instance, created, **kwargs):
-    if created:
-        channel_name = f"{instance.token.user_id}"  # Assuming you use the user's ID in the channel name
-        channel_layer = get_channel_layer()
-
-        # Send a disconnect message to the WebSocket handler
-        async_to_sync(channel_layer.group_send)(
-            channel_name,  # Channel name should match the user's WebSocket channel
-            {
-                "type": "check_refresh_disconnect",
-                "refresh":instance.token.token  
-            }
-        )
 class Media(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     file = models.FileField(upload_to='media/files/', null=False)  # Media file field
@@ -58,24 +44,3 @@ class MessageStatus(models.Model):
         return f"Status of message {self.message}"
 
 
-
-@receiver(post_save, sender=MessageStatus)
-def send_group_notification(sender, instance, created, **kwargs):
-    channel_layer = get_channel_layer()
-
-    if instance.is_received or instance.is_seen:
-        try:
-            async_to_sync(channel_layer.group_send)(
-                str(instance.message.friendship.id),
-                {
-                    'type': 'send_notification_friendship',
-                    "is_seen": instance.is_seen,
-                    "is_received": instance.is_received,
-                    'message': str(instance.id),
-                    "owner": instance.message.sender.id,
-                    "channel":str(instance.message.friendship.id),
-                }
-            )
-            logger.info(f"Notification sent for message {instance.id} in friendship {instance.message.friendship.id}")
-        except Exception as e:
-            logger.error(f"Failed to send notification for message {instance.id}: {e}")
