@@ -277,10 +277,10 @@ Returned if there is a generic token-related error:
 
 ------
 
-### Security Notes
-
-- **Blacklist Tokens:** This implementation uses the `django-rest-framework-simplejwt` blacklist feature to invalidate refresh tokens.
-- **Authorization Required:** Users must be authenticated to access this endpoint.
+> [!IMPORTANT]
+>
+> - **Blacklist Tokens:** This implementation uses the `django-rest-framework-simplejwt` blacklist feature to invalidate refresh tokens.
+> - **Authorization Required:** Users must be authenticated to access this endpoint.
 
 ------
 
@@ -366,7 +366,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1...
 
 
 
-Here’s the updated version with headers shifted one level down:
+
 
 ## Token Refresh API
 
