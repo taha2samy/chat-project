@@ -1,17 +1,31 @@
-# API Endpoint Table of Contents
 
-| Category           | Endpoint                                                     | Method         | Description                                                  |
-| ------------------ | ------------------------------------------------------------ | -------------- | ------------------------------------------------------------ |
-| **Authentication** | [`/api/users/login/`](#login-api)                            | `POST`         | Authenticate user and obtain access and refresh tokens.      |
-|                    | [`/api/users/logout/`](#logout-api)                          | `POST`         | Logout user by invalidating the refresh token.               |
-|                    | [`/api/users/refresh-token/`](#token-refresh-api)            | `POST`         | Refresh the access token using a valid refresh token.        |
-|                    | [`/api/users/signup/`](#signup-api-documentation)            | `POST`         | Register a new user account.                                 |
-| **User Profiles**  | [`/api/users/profile/`](#userprofileview-api-documentation)  | `GET`, `PATCH` | Retrieve and update the current user's profile information.  |
-|                    | [`/api/users/`](#userlistview-api-documentation)             | `GET`          | Retrieve a list of users (paginated, optional username filter). |
-| **Friendships**    | [`/api/users/friendship/`](#friendship-api-documentation)    | `GET`          | Retrieve all friendship relationships for the current user.  |
-|                    | [`/api/users/friendship/`](#friendship-api-documentation)    | `POST`         | Create a new friendship request.                             |
-|                    | [`/api/users/friendship/`](#friendship-api-documentation)    | `PATCH`        | Update the status of an existing friendship.                 |
-| **Messages**       | [`/api/messages/status/friendship/<uuid:friendship_id>/messages/`](#messagestatusview-api-documentation) | `GET`          | Retrieve paginated message statuses for a specific friendship. |
+
+# API Endpoints Documentation
+
+## **Authentication**
+1. [`/api/users/login/`](#login-api) - `POST`: Authenticate user and obtain access and refresh tokens.
+2. [`/api/users/logout/`](#logout-api) - `POST`: Logout user by invalidating the refresh token.
+3. [`/api/users/refresh-token/`](#token-refresh-api) - `POST`: Refresh the access token using a valid refresh token.
+4. [`/api/users/signup/`](#signup-api-documentation) - `POST`: Register a new user account.
+
+---
+
+## **User Profiles**
+1. [`/api/users/profile/`](#userprofileview-api-documentation) - `GET`, `PATCH`: Retrieve and update the current user's profile information.
+2. [`/api/users/`](#userlistview-api-documentation) - `GET`: Retrieve a list of users (paginated, optional username filter).
+
+---
+
+## **Friendships**
+1. [`/api/users/friendship/`](#friendship-api-documentation) - `GET`: Retrieve all friendship relationships for the current user.
+2. [`/api/users/friendship/`](#friendship-api-documentation) - `POST`: Create a new friendship request.
+3. [`/api/users/friendship/`](#friendship-api-documentation) - `PATCH`: Update the status of an existing friendship.
+
+---
+
+## **Messages**
+1. [`/api/messages/status/friendship/<uuid:friendship_id>/messages/`](#messagestatusview-api-documentation) - `GET`: Retrieve paginated message statuses for a specific friendship.
+
 
 ## Login API
 
