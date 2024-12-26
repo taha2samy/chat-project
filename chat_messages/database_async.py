@@ -6,6 +6,7 @@ from channels.db import database_sync_to_async
 
 @database_sync_to_async
 def get_all_friendship(user):     
+    
     return list(
         Friendship.objects.filter(
             Q(from_user=user.id) | Q(to_user=user.id)
@@ -18,5 +19,8 @@ def get_all_friendship(user):
 @database_sync_to_async
 def get_all_group(user):
     group_memberships = GroupMembership.objects.filter(user=user)
-    return list(group_memberships.values('group_id'))
+    l=[]
+    for i in group_memberships:
+        l.append({"id":i.group.id,"name":i.group.name})
+    return l
 

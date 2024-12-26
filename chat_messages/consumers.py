@@ -5,8 +5,9 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
+
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Message,MessageStatus
+from .models import Message,MessageStatus,ChatMessage,ChatMessageStatus
 from .serializers import MessageStatusSerializer
 from users.serializers import FriendshipSerializer
 from .database_async import get_all_group,get_all_friendship
@@ -68,14 +69,14 @@ class MessageConsumer(AsyncWebsocketConsumer):
     async def _fetch_and_add_channels_to_group(self):
         all_friendships = await get_all_friendship(self.user)
         all_groups = await get_all_group(self.user)
-        self.all_friends={}
+        self.all_friends=[]
         for i in all_friendships:
             if self.user.id==i.from_user_id:
                 self.all_friends.append({"id":i.id,"friend":i.to_user_id})
             else:
                 self.all_friends.append({"id":i.id,"friend":i.from_user_id})
         all_group_memberships = {str(i.id) for i in all_friendships}
-        all_friends_channels = {str(i.id) for i in all_groups}
+        all_friends_channels = {str(i["id"]) for i in all_groups}
 
         self.all_channels_subscribe = all_friends_channels.union(all_group_memberships)
         for channel in self.all_channels_subscribe:
@@ -94,7 +95,7 @@ class MessageConsumer(AsyncWebsocketConsumer):
     
     async def handler_friendship(self,event):
         msg = await self.get_frindshipserializer(event["friendship"])
-        await self.send(text_data=json.dumps({"friendship": msg,"type":"friendship"}, cls=CustomJSONEncoder))  # Use the custom encoder here
+        await self.send(text_data=json.dumps({"friendship": msg,"type":"frienship_message"}, cls=CustomJSONEncoder))  # Use the custom encoder here
         pass
 
         pass
@@ -122,8 +123,8 @@ class MessageConsumer(AsyncWebsocketConsumer):
                 await self.send(json.dumps({"error":"this message id is not exist or channel"}))
             pass
 
-        if message_type=="friendship":
-            message_payload= message.get("payload",None)
+        if message_type=="friendship_message":
+            message_payload= message.get("content",None)
             message_media=message.get("media",None)
             message_channel=message.get("channel")
             if message_media != None:
@@ -138,50 +139,55 @@ class MessageConsumer(AsyncWebsocketConsumer):
                 return
             message = await database_sync_to_async(Message.objects.create)(friendship_id=message_channel,
                                     sender=self.user,
-                                    receiver_id=friend,
                                     content=message_payload
                                     )
-            message_status = await database_sync_to_async(MessageStatus.objects.create)(message=message)
-            await database_sync_to_async(message_status.save)()
-            await self.channel_layer.group_send(message_channel,{
-                    "type":"frienship_message",
-                    "message":message,
-                    "message_status":message_status
-                })
+            message_status = await database_sync_to_async(MessageStatus.objects.create)(message=message,receiver_id=friend)
+
+        if message_type=="group_message":
+            message_payload= message.get("content",None)
+            message_media=message.get("media",None)
+            message_channel=message.get("channel")
+            if message_media != None:
+                pass
+            
+            message = await database_sync_to_async(ChatMessage.objects.create)(chatgroup_id=message_channel,
+                                                               sender=self.user,
+                                                               content=message_payload)
+            
+            pass
             
             
 
-        
-    async def group_message(self, event):
+    async def send_notification_chatgroup(self,event):
+        if self.user.id != event["chat_message_status"]["receiver"]:
+            await self.send(text_data=json.dumps({"message":event["chat_message_status"],"type":"chat_message_notification"}, cls=CustomJSONEncoder))    
         pass
+    async def message_group(self, event):
+        if self.user.id == event["chat_message"]["sender"]:
+            pass
 
-    @database_sync_to_async
-    def get_serlizer_message(self,message):
-        l =MessageStatusSerializer(message)
-        return l.data
-    @database_sync_to_async
-    def get_receiver_of_message(self,message):
-        return message.receiver
-   
-    async def frienship_message(self,event):
+        else:
+            await database_sync_to_async(ChatMessageStatus.objects.create)(message_id=event["chat_message"]["id"],receiver_id=self.user.id,is_received=True)            
 
-        message_status=event["message_status"]
-        if (await self.get_receiver_of_message(event["message"]))==self.user:
-             message_status.is_received = True
-             await database_sync_to_async(message_status.save)()
-        #message = await self.get_serlizer_message(event["message"])
-        message_status = await self.get_serlizer_message(event["message_status"])
-        await self.send(text_data=json.dumps({"message": message_status,"type":"message_frindship"}, cls=CustomJSONEncoder))  # Use the custom encoder here
+            pass
+        await self.send(text_data=json.dumps({"type":"group_message","message":event["chat_message"]},cls=CustomJSONEncoder))
+
+    async def message_friendship(self,event):
+        await self.send(text_data=json.dumps({"type":"friendship_message","message":event["chat_message"]},cls=CustomJSONEncoder))
+        if self.user.id != event["chat_message"]["sender"]:
+            msg=await database_sync_to_async(MessageStatus.objects.get)(message_id=event["chat_message"]["id"])
+            msg.is_received=True
+            await database_sync_to_async(msg.save)()
         pass
     async def check_refresh_disconnect(self,event):
         if str(event["refresh"])==self.refresh:
             logger.debug("unathorfetchedized conection close from websocket")
             await self.close(code=4001, reason="Unauthorized access")
     async def send_notification_friendship (self,event):
-        message = await self.get_serlizer_message(event['message_status'])
-        if str(message["message"]["sender"])==str(self.user.id):
-            await self.send(text_data=json.dumps({"message":message,"type":"message_frindship_notification"}, cls=CustomJSONEncoder))    
-            pass
+        if self.user.id!=event["message"]["receiver"]:
+            await self.send(text_data=json.dumps({"message":event["message"],"type":"chat_friendship_notification"}, cls=CustomJSONEncoder))
+        pass
+
     async def add_remove_friendship(self,event):
         if event['accepted']:
             self.all_friends.append({"id": event["friendship"], "friend": event["from_user_id"] if self.user.id == event["to_user_id"] else event["to_user_id"]})
@@ -189,10 +195,11 @@ class MessageConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add(str(event["friendship"]), self.channel_name)
             logger.debug(f"consumer {self.user.username}  subscribe {event["friendship"]}")
         else:
-            
-            self.all_friends.discard({"id": event["friendship"], "friend": event["from_user_id"] if self.user.id == event["to_user_id"] else event["to_user_id"]})
-            self.all_channels_subscribe.discard(str(event["friendship"]))
-            await self.channel_layer.group_discard(str(event["friendship"]), self.channel_name)
-            logger.debug(f"consumer {self.user.username}  unsubscribe {event["friendship"]}")
-            pass
+            try:
+                self.all_friends.remove({"id": event["friendship"], "friend": event["from_user_id"] if self.user.id == event["to_user_id"] else event["to_user_id"]})
+                self.all_channels_subscribe.discard(str(event["friendship"]))
+                await self.channel_layer.group_discard(str(event["friendship"]), self.channel_name)
+                logger.debug(f"consumer {self.user.username}  unsubscribe {event["friendship"]}")
+            except:
+                pass
         pass

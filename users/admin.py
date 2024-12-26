@@ -18,7 +18,7 @@ admin.site.register(User, UserAdmin)
 
 # Register the Group model
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created_at', 'updated_at')
+    list_display = ("id",'name', 'created_at', 'updated_at')
     search_fields = ('name',)
     list_filter = ('created_at', 'updated_at')
 
