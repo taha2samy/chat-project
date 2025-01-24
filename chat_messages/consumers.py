@@ -98,66 +98,10 @@ class MessageConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({"friendship": msg,"type":"frienship_message"}, cls=CustomJSONEncoder))  # Use the custom encoder here
         pass
 
-        pass
+        
 
     async def receive(self, text_data):
-        logger.info(f"Received message: from {self.user}")
-        try:
-            message = json.loads(text_data)
-        except json.JSONDecodeError:
-            logger.error("Failed to parse JSON.")
-            await self.send(text_data=json.dumps({
-                'error': 'Invalid JSON format'
-            }))
-            return
-        message_type =message.get("type",None)
-
-        if message_type=="friendship_notification_seen":
-            try:
-                message_channel=message.get("channel")
-                message_id=message.get("message_id")
-                message_status=  await database_sync_to_async(MessageStatus.objects.get)(message__id=str(message_id),message__receiver__id=self.user.id)
-                message_status.is_seen=True
-                await database_sync_to_async(message_status.save)()
-            except:
-                await self.send(json.dumps({"error":"this message id is not exist or channel"}))
-            pass
-
-        if message_type=="friendship_message":
-            message_payload= message.get("content",None)
-            message_media=message.get("media",None)
-            message_channel=message.get("channel")
-            if message_media != None:
-                pass
-            friend = None
-            for channel in self.all_friends:
-                channel_friend = str(channel.get("id"))
-                if channel_friend == message_channel:
-                    friend = channel.get("friend")
-                    break
-            if friend == None:
-                return
-            message = await database_sync_to_async(Message.objects.create)(friendship_id=message_channel,
-                                    sender=self.user,
-                                    content=message_payload
-                                    )
-            message_status = await database_sync_to_async(MessageStatus.objects.create)(message=message,receiver_id=friend)
-
-        if message_type=="group_message":
-            message_payload= message.get("content",None)
-            message_media=message.get("media",None)
-            message_channel=message.get("channel")
-            if message_media != None:
-                pass
-            
-            message = await database_sync_to_async(ChatMessage.objects.create)(chatgroup_id=message_channel,
-                                                               sender=self.user,
-                                                               content=message_payload)
-            
-            pass
-            
-            
-
+        pass
     async def send_notification_chatgroup(self,event):
         if self.user.id != event["chat_message_status"]["receiver"]:
             await self.send(text_data=json.dumps({"message":event["chat_message_status"],"type":"chat_message_notification"}, cls=CustomJSONEncoder))    
@@ -174,8 +118,8 @@ class MessageConsumer(AsyncWebsocketConsumer):
 
     async def message_friendship(self,event):
         await self.send(text_data=json.dumps({"type":"friendship_message","message":event["chat_message"]},cls=CustomJSONEncoder))
-        if self.user.id != event["chat_message"]["sender"]:
-            msg=await database_sync_to_async(MessageStatus.objects.get)(message_id=event["chat_message"]["id"])
+        if str(self.user.id) != event["chat_message"]["message"]["sender"]:
+            msg=await database_sync_to_async(MessageStatus.objects.get)(message=event["chat_message"]["message"]["id"])
             msg.is_received=True
             await database_sync_to_async(msg.save)()
         pass

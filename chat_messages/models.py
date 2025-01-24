@@ -26,7 +26,7 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     media = models.ManyToManyField(Media, related_name='messages', blank=True)
     def __str__(self):
-        return f"Message from {self.sender.username} to {self.receiver.username}"
+        return f"Message from {self.sender.username}"
 
 class MessageStatus(models.Model):
     message = models.OneToOneField(Message, related_name='statuses', on_delete=models.CASCADE,primary_key=True)

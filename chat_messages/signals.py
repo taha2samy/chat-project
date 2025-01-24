@@ -9,31 +9,51 @@ import logging
 
 logger = logging.getLogger("chat_messages")
 
-@receiver(post_save, sender=Message)
-def send_message_friendship(sender, instance, created, **kwargs):
-    channel_layer = get_channel_layer()
+@receiver(post_save, sender=MessageStatus)
+def send_group_notification(sender, instance, created, **kwargs):
+   
     if created:
+        channel_layer = get_channel_layer()
         try:
-            # Serialize the Message instance
-            serializer = MessageSerializer(instance)
+            # Serialize the MessageStatus instance
+            serializer = MessageStatusSerializer(instance)
             serialized_data = serializer.data
-            
             # Send serialized data to the group
-            async_to_sync(channel_layer.group_send)(str(instance.friendship.id),
+            async_to_sync(channel_layer.group_send)(str(instance.message.friendship.id),
                 {
                     'type': 'message_friendship',
-                    "chat_message": serialized_data,  # Pass serialized dat
+                    "chat_message": serialized_data,  # Pass serialized data
                 }
             )
-            logger.info(f"Message {instance.id} sent in friendship {instance.friendship.id}")
+            logger.info(f"Message status {instance.message.id} sent in friendship {instance.message.friendship.id}")
         except Exception as e:
-            logger.error(f"Failed to send notification for message {instance.id}: {e}")
+            logger.error(f"Failed to send notification for message status {instance.message.id}: {e}")
+
+            
+
+    if instance.is_received or instance.is_seen:
+        channel_layer = get_channel_layer()
+        serializer=MessageStatusSerializer(instance)
+        serialized_data=serializer.data
+
+        try:
+            async_to_sync(channel_layer.group_send)(
+                str(instance.message.friendship.id),
+                {
+                    'type': 'send_notification_friendship',
+                    "message": serialized_data,
+                }
+            )
+            logger.info(f"Notification sent for message {instance.message.id} in friendship {instance.message.friendship.id}")
+        except Exception as e:
+            logger.error(f"Failed to send notification for message {instance.message.id}: {e}")
 
 
 @receiver(post_save, sender=ChatMessageStatus)
 def send_notification(sender, instance, created, **kwargs):
-    channel_layer = get_channel_layer()
+    
     if instance.is_received or instance.is_seen:
+        channel_layer = get_channel_layer()
         serializer=chatMessageStatusSerializer(instance)
         serialized_data=serializer.data
         try:
@@ -84,21 +104,3 @@ def on_blacklisted_token_created(sender, instance, created, **kwargs):
         )
 
 
-@receiver(post_save, sender=MessageStatus)
-def send_group_notification(sender, instance, created, **kwargs):
-    channel_layer = get_channel_layer()
-
-    if instance.is_received or instance.is_seen:
-        serializer=MessageStatusSerializer(instance)
-        serialized_data=serializer.data
-        try:
-            async_to_sync(channel_layer.group_send)(
-                str(instance.message.friendship.id),
-                {
-                    'type': 'send_notification_friendship',
-                    "message": serialized_data,
-                }
-            )
-            logger.info(f"Notification sent for message {instance.message.id} in friendship {instance.message.friendship.id}")
-        except Exception as e:
-            logger.error(f"Failed to send notification for message {instance.message.id}: {e}")
